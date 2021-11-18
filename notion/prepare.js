@@ -1,5 +1,7 @@
 import { Client } from '@notionhq/client/build/src'
 import { v4 as uuidv4 } from 'uuid'
+import { downloadFile, fileExists } from '../server/utils'
+import sizeOf from 'image-size'
 
 const notion = new Client({
   auth: process.env.NOTION_SECRET,
@@ -85,7 +87,7 @@ export const listifyBlocks = (blocks) => {
   )
 }
 
-export const prepareBlock = (block) => {
+export const prepareBlock = async (block) => {
   switch (block.type) {
     case 'paragraph':
     case 'heading_1':
@@ -94,6 +96,8 @@ export const prepareBlock = (block) => {
     case 'bulleted_list_item':
     case 'numbered_list_item':
       return prepareTextTypeBlock(block)
+    case 'image':
+      return await prepareImage(block)
     default:
       return block
   }
@@ -110,5 +114,18 @@ export const prepareTextTypeBlock = async (block) => {
     ...prepareIdAndType(block),
     ...prepareTextContent(block),
     children,
+  }
+}
+
+export const prepareImage = async (block) => {
+  const filePath = `./public/images/${block.id}.jpg`
+  if (!fileExists(filePath)) {
+    await downloadFile(block.image.file.url, filePath)
+  }
+  const dimensions = sizeOf(filePath)
+  return {
+    ...prepareIdAndType(block),
+    caption: block.image.caption,
+    dimensions,
   }
 }

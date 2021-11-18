@@ -23,6 +23,8 @@ export const parseBlock = (block) => {
       return parseRichText(block)
     case 'numbered_list':
       return parseNumberedList(block)
+    case 'bulleted_list':
+      return parseBulletedList(block)
     default:
       console.log(block.type)
       throw 'Could not parse'
@@ -31,75 +33,77 @@ export const parseBlock = (block) => {
 
 const parseListItems = (blocks) => <>{blocks.map(parseListItem)}</>
 
-const parseListItem = (block) => {
-  return <li key={block.id}>{block.text.map(parseText)}</li>
-}
+const parseListItem = (block) => (
+  <li key={block.id}>
+    {block.text.map(parseText)}
+    {parseBlocks(block.children)}
+  </li>
+)
 
-const parseNumberedList = (block) => {
-  return <ol key={block.id}>{parseListItems(block.listItems)}</ol>
-}
+const parseNumberedList = (block) => (
+  <ol key={block.id}>{parseListItems(block.listItems)}</ol>
+)
 
-const parseHeading1 = (block) => {
-  return <h2 key={block.id}>{block.heading_1.text.map(parseText)}</h2>
-}
+const parseBulletedList = (block) => (
+  <ul key={block.id}>{parseListItems(block.listItems)}</ul>
+)
 
-const parseHeading2 = (block) => {
-  return <h3 key={block.id}>{block.heading_2.text.map(parseText)}</h3>
-}
+const parseHeading1 = (block) => (
+  <h2 key={block.id}>{block.text.map(parseText)}</h2>
+)
 
-const parseHeading3 = (block) => {
-  return <h4 key={block.id}>{block.heading_3.text.map(parseText)}</h4>
-}
+const parseHeading2 = (block) => (
+  <h3 key={block.id}>{block.text.map(parseText)}</h3>
+)
 
-const parseParagraph = (block) => {
-  return (
-    <p key={block.id}>
-      {block.text.map((text, index) => {
-        let element = parseText(text)
-        if (typeof element !== 'string') {
-          element = React.cloneElement(element, { key: index })
-        }
-        return element
-      })}
-    </p>
-  )
-}
+const parseHeading3 = (block) => (
+  <h4 key={block.id}>{block.text.map(parseText)}</h4>
+)
 
-const parseRichText = (block) => {
-  return (
-    <p key={block.id}>
-      {block.rich_text.map((text, index) => {
-        let element = parseText(text)
-        if (typeof element !== 'string') {
-          element = React.cloneElement(element, { key: index })
-        }
-        return element
-      })}
-    </p>
-  )
-}
+const parseParagraph = (block) => (
+  <p key={block.id}>
+    {block.text.map((text, index) => {
+      let element = parseText(text)
+      if (typeof element !== 'string') {
+        element = React.cloneElement(element, { key: index })
+      }
+      return element
+    })}
+  </p>
+)
 
-const parseImage = ({ id, dimensions, image }) => {
+const parseRichText = (block) => (
+  <p key={block.id}>
+    {block.rich_text.map((text, index) => {
+      let element = parseText(text)
+      if (typeof element !== 'string') {
+        element = React.cloneElement(element, { key: index })
+      }
+      return element
+    })}
+  </p>
+)
+
+const parseImage = (block) => {
+  const { id, dimensions, caption } = block
   return (
     <Image
       key={id}
       src={`/images/${id}.jpg`}
       width={dimensions.width}
       height={dimensions.height}
-      alt={parsePlainText(image.caption)}
+      alt={parsePlainText(caption)}
     />
   )
 }
 
-const parseCode = ({ id, code }) => {
-  return (
-    <pre key={id}>
-      <code className={`language-${code.language}`}>
-        {parsePlainText(code.text)}
-      </code>
-    </pre>
-  )
-}
+const parseCode = ({ id, code }) => (
+  <pre key={id}>
+    <code className={`language-${code.language}`}>
+      {parsePlainText(code.text)}
+    </code>
+  </pre>
+)
 
 export const parsePlainText = (texts) =>
   texts.map((text) => text.plain_text).join('')
